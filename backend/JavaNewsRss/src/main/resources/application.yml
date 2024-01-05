@@ -1,0 +1,41 @@
+# Database
+spring:
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show-sql: true
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: jdbc:postgresql://localhost:5432/deneme
+    username: mycustomuser
+    password: mysecretpassword
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=5000,expireAfterAccess=10000m
+# RUN port
+server:
+  port: 8080
+# Redirect my api instead of pet shop Swagger
+springdoc:
+  swagger-ui:
+    url: /v3/api-docs
+# NEWS LINK
+news:
+  bbc:
+    url: https://www.bbc.co.uk/turkce/index.xml
+  ntv:
+    url: https://www.ntv.com.tr/son-dakika.rss
+  sozcu:
+    url: https://www.sozcu.com.tr/feeds-haberler
+
+#LIMIT API
+resilience4j:
+  rate-limiter:
+    instances:
+      newsRateLimiter:
+        limit-for-period: 100
+        limit-refresh-period: 1m
+        timeout-duration: 1m

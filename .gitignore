@@ -1,0 +1,41 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Spring Boot specific
+.classpath
+.project
+.settings
+.springBeans
+.factorypath
+.sts4-cache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Node modules and build outputs for React
+node_modules/
+dist/
+dist-ssr/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local development
+*.local
+
+# Various OS generated files
+.DS_Store
+*.suo
