@@ -13,7 +13,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - postgres-network
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -26,10 +26,35 @@ services:
     depends_on:
       - postgres
     networks:
-      - postgres-network
+      - app-network
+
+  springboot-app:
+    image: denizcex/backend:latest  # Backend imajı
+    container_name: backend  # Spring Boot uygulamasına "backend" adını veriyoruz
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mydatabase
+      SPRING_DATASOURCE_USERNAME: mycustomuser
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  frontend:
+    image: denizcex/frontend:latest  # Frontend imajı
+    ports:
+      - "3000:80"  # Host makinenizdeki 3000 portunu frontend'in 3000 portuna yönlendirir
+    depends_on:
+      - springboot-app
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
 
 networks:
-  postgres-network:
+  app-network:
+    driver: bridge
