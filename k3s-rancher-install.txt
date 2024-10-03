@@ -1,0 +1,82 @@
+# setenforce 0
+# vim /etc/sysconfig/selinux
+...
+SELINUX=disabled
+...
+# systemctl stop firewalld
+# systemctl disable firewalld
+# swapoff -a 
+# vim /etc/fstab ## Swap yoruma alınır.
+# systemctl daemon-reload
+# curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+# chmod 700 get_helm.sh
+# ./get_helm.sh
+# curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_VERSION=v1.30.4+k3s1 INSTALL_K3S_EXEC="server --cluster-cidr=172.16.0.0/16 --disable=traefik" sh -s -
+# vim /var/lib/rancher/k3s/server/manifests/ingress-nginx.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: ingress-nginx
+  namespace: kube-system
+spec:
+  chart: ingress-nginx
+  repo: https://kubernetes.github.io/ingress-nginx
+  targetNamespace: ingress-nginx
+  version: 4.11.2
+  set:
+  valuesContent: |-
+    fullnameOverride: ingress-nginx
+    controller:
+      kind: DaemonSet
+      hostNetwork: true
+      hostPort:
+        enabled: true
+      service:
+        enabled: false
+      publishService:
+        enabled: false
+      metrics:
+        enabled: false
+      config:
+        use-forwarded-headers: "true"
+
+# kubectl create namespace cattle-system
+# kubectl create namespace cert-manager
+# helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+# helm repo add jetstack https://charts.jetstack.io
+# helm repo update
+# kubectl edit IngressClass nginx -o yaml ## Varsayılan ingressClass olması için annotation ekliyoruz. 'ingressclass.kubernetes.io/is-default-class: "true"'
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: ingress-nginx
+    meta.helm.sh/release-namespace: ingress-nginx
+    ingressclass.kubernetes.io/is-default-class: "true"
+  creationTimestamp: "2023-06-07T09:04:28Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.8.0
+    helm.sh/chart: ingress-nginx-4.7.0
+  name: nginx
+  resourceVersion: "1065"
+  uid: a9a08eb4-7730-4a14-8f22-fde23751d268
+spec:
+  controller: k8s.io/ingress-nginx
+
+
+# echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> /etc/profile
+# source /etc/profile
+# helm install cert-manager jetstack/cert-manager --set installCRDs=true --namespace cert-manager
+# helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=k3s.denizsullu.com.tr --set bootstrapPassword=admin --set global.cattle.psp.enabled=false --set replicas=1
+# kubectl -n cattle-system rollout status deploy/rancher
