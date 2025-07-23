@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping(path = "/api/news")
 @AllArgsConstructor
 @Validated
+@CrossOrigin(origins = "*")
 public class NewsController {
     private final NewsService newsService;
 
