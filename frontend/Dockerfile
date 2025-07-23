@@ -1,35 +1,22 @@
-# Temel imaj olarak Node.js'i kullan
-FROM node:18-alpine
+# ---------- Build Stage ----------
+FROM node:20-alpine AS build
+# pnpm için corepack
+RUN corepack enable
 
-# pnpm'i global olarak yükle
-RUN npm install -g pnpm
-
-# Çalışma dizinini ayarla
 WORKDIR /app
-
-# Bağımlılıkları yüklemeden önce package.json, pnpm-lock.yaml dosyalarını kopyala
 COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# pnpm kullanarak bağımlılıkları yükle
-RUN pnpm install
-
-# Proje dosyalarını kopyala
 COPY . .
+RUN pnpm build   # veya: pnpm run build
 
-# Projeyi build et
-RUN pnpm run build
+# ---------- Runtime Stage ----------
+FROM nginx:1.27-alpine
+# Nginx konfigürünü kopyala (proxy vs. varsa)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Prod modunda Vite'in build klasörünü sunmak için bir Nginx kullan
-FROM nginx:alpine
+# Statik dosyaları kopyala
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Build edilen dosyaları Nginx'e kopyala
-COPY --from=0 /app/dist /usr/share/nginx/html
-
-# Nginx konfigürasyonunu kopyala
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
-# Uygulamanın sunulacağı portu belirt
 EXPOSE 80
-
-# Nginx'i başlat
 CMD ["nginx", "-g", "daemon off;"]
