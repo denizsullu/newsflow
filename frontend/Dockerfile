@@ -1,21 +1,15 @@
-# ---------- Build Stage ----------
 FROM node:20-alpine AS build
-# pnpm için corepack
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build   # veya: pnpm run build
+RUN pnpm build
 
-# ---------- Runtime Stage ----------
 FROM nginx:1.27-alpine
-# Nginx konfigürünü kopyala (proxy vs. varsa)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Statik dosyaları kopyala
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80

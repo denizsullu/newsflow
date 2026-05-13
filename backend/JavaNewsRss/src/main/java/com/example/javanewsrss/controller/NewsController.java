@@ -51,8 +51,12 @@ public class NewsController {
     @Cacheable(value = "getNewsPageable")
     @RateLimiter(name = "newsRateLimiter")
     public DataResult<Page<GetPagination>> getNewsPageable(@RequestParam int page,
-                                                           @RequestParam int size) {
-        return newsService.getNewsPageable(PageRequest.of(page, size, Sort.by("publishedDate")));
+                                                           @RequestParam int size,
+                                                           @RequestParam(required = false) String publisher) {
+        return newsService.getNewsPageable(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedDate")),
+                publisher
+        );
     }
 
     @GetMapping("/findByUUID")

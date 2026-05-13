@@ -1,121 +1,305 @@
-import { useEffect, useState } from "react";
-import NewsService from "../services/newsService.js";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import NewsService from "../services/newsService.js";
 
-function News() {
-    const [news, setNews] = useState([]);
-    const [displayedNewsCount, setDisplayedNewsCount] = useState(20);
-    const [selectedPublisher, setSelectedPublisher] = useState(''); // Yayıncı seçimi için yeni durum
+const newsService = new NewsService();
+const pageSizes = [8, 12, 16];
+const publishers = ["Sozcu", "NTV", "BBC"];
+const fallbackImage = "/601eeb63-6542-4a1b-b323-a23303f48d55.webp";
+
+const publisherMeta = {
+    Sozcu: {
+        label: "Sozcu",
+        short: "SZ",
+        accent: "bg-[#da3d2a] text-white",
+        soft: "bg-[#fff1ed] text-[#a72b1d]",
+    },
+    NTV: {
+        label: "NTV",
+        short: "NT",
+        accent: "bg-[#19a7a1] text-[#062725]",
+        soft: "bg-[#e7fbf8] text-[#0d6864]",
+    },
+    BBC: {
+        label: "BBC",
+        short: "BC",
+        accent: "bg-[#202733] text-white",
+        soft: "bg-[#eef1f5] text-[#202733]",
+    },
+};
+
+function formatDate(value) {
+    if (!value) return "";
+
+    return new Date(value).toLocaleString("tr-TR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+}
+
+function excerpt(value, limit = 150) {
+    if (!value) return "";
+    return value.length > limit ? `${value.slice(0, limit).trim()}...` : value;
+}
+
+function PublisherMark({ publisher, compact = false }) {
+    const meta = publisherMeta[publisher] || {
+        label: publisher || "Kaynak",
+        short: "NF",
+        accent: "bg-[#2b2118] text-white",
+        soft: "bg-[#f4efe7] text-[#2b2118]",
+    };
+
+    return (
+        <span className="flex items-center gap-2">
+            <span className={`source-mark ${meta.accent}`}>{meta.short}</span>
+            {!compact && <span className="source-name">{meta.label}</span>}
+        </span>
+    );
+}
+
+function NewsImage({ item, large = false }) {
+    const [src, setSrc] = useState(item.imageUrl || fallbackImage);
 
     useEffect(() => {
-        let newsService = new NewsService();
-        newsService.getAllNews().then(result => setNews(result.data.data));
-    }, []);
+        setSrc(item.imageUrl || fallbackImage);
+    }, [item.imageUrl]);
 
-    const showMoreNews = () => {
-        setDisplayedNewsCount(prevCount => prevCount + 20);
-    };
-
-
-    const filteredNews = selectedPublisher
-        ? news.filter(item => item.publisher === selectedPublisher)
-        : news;
-
-
-    const handlePublisherChange = (event) => {
-        setSelectedPublisher(event.target.value);
-    };
-    const getPublishers = () => {
-        const publishers = new Set(news.map(item => item.publisher));
-        return Array.from(publishers);
-    };
-    const publishers = getPublishers();
     return (
-        <>
-            <div className="flex flex-wrap gap-2 p-4 justify-center">
-                {/* Tüm Yayıncılar butonu */}
-                <button
-                    onClick={() => setSelectedPublisher('')}
-                    className={`px-4 py-2 rounded ${selectedPublisher === '' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-                    Tüm Yayıncılar
-                </button>
-                {/* Yayıncı butonları */}
-                {publishers.map((publisher, index) => (
+        <img
+            src={src}
+            loading="lazy"
+            alt={item.title}
+            onError={() => setSrc(fallbackImage)}
+            className={`news-image ${large ? "news-image-large" : ""}`}
+        />
+    );
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }) {
+    const pages = useMemo(() => {
+        const last = Math.max(totalPages - 1, 0);
+        const start = Math.max(0, Math.min(currentPage - 2, last - 4));
+        const end = Math.min(last, start + 4);
+
+        return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+    }, [currentPage, totalPages]);
+
+    if (totalPages <= 1) return null;
+
+    return (
+        <nav className="pagination" aria-label="Haber sayfalari">
+            <button
+                className="pagination-button"
+                disabled={currentPage === 0}
+                onClick={() => onPageChange(currentPage - 1)}
+            >
+                Onceki
+            </button>
+            <div className="pagination-pages">
+                {pages.map((pageNumber) => (
                     <button
-                        key={index}
-                        onClick={() => setSelectedPublisher(publisher)}
-                        className={`px-4 py-2 rounded ${selectedPublisher === publisher ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-                        {publisher}
+                        key={pageNumber}
+                        className={`pagination-number ${pageNumber === currentPage ? "active" : ""}`}
+                        onClick={() => onPageChange(pageNumber)}
+                    >
+                        {pageNumber + 1}
                     </button>
                 ))}
             </div>
-            <div className="bg-white py-6 sm:py-8 lg:py-12">
-                <div className="mx-auto max-w-screen-2xl px-4 md:px-8">
-                    <div className="mb-10 md:mb-16">
-                        <h2 className="mb-4 text-center text-2xl font-bold text-gray-800 md:mb-6 lg:text-3xl">Haberler</h2>
-                    </div>
+            <button
+                className="pagination-button"
+                disabled={currentPage >= totalPages - 1}
+                onClick={() => onPageChange(currentPage + 1)}
+            >
+                Sonraki
+            </button>
+        </nav>
+    );
+}
+
+function NewsCard({ item }) {
+    return (
+        <article className="news-card">
+            <Link to={`/news/${item.id}`} className="news-card-media" aria-label={item.title}>
+                <NewsImage item={item} />
+            </Link>
+            <div className="news-card-body">
+                <div className="news-card-meta">
+                    <PublisherMark publisher={item.publisher} compact />
+                    <time>{formatDate(item.publishedDate)}</time>
                 </div>
+                <Link to={`/news/${item.id}`} className="news-card-title">
+                    {item.title}
+                </Link>
+                <p className="news-card-copy">{excerpt(item.content)}</p>
             </div>
-            <div className="mx-auto max-w-screen-2xl px-4 md:px-8">
-                <div className="grid gap-5 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4 xl:gap-8">
-                    {filteredNews.slice(0, displayedNewsCount).map((item, index) => {
-                        const date = new Date(item.publishedDate);
-                        const formattedDate = date.toLocaleString('tr-TR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
+        </article>
+    );
+}
 
-                        return (
-                            <div className="flex flex-col overflow-hidden rounded-lg border bg-white" key={index}>
-                                <Link to={`/news/${item.id}`}
-                                      className="group relative block h-48 overflow-hidden bg-gray-100 md:h-64">
-                                    <img
-                                        src={item.imageUrl ? item.imageUrl : '/public/601eeb63-6542-4a1b-b323-a23303f48d55.webp'}
-                                        loading="lazy" alt={item.title}
-                                        className="absolute inset-0 h-full w-full object-cover object-center transition duration-200 group-hover:scale-110"/>
-                                </Link>
-                                <div className="flex flex-1 flex-col p-4 sm:p-6">
-                                    <h2 className="mb-2 text-lg font-semibold text-gray-800">
-                                        <Link to={`/news/${item.id}`}>{item.title}</Link>
-                                    </h2>
-                                    <p className="mb-8 text-gray-500">
-                                        {item.content.length > 200 ? item.content.slice(0, 200) + "..." : item.content}
-                                    </p>
+function LeadStory({ item }) {
+    if (!item) return null;
 
-                                    <div className="mt-auto flex items-end justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div
-                                                className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100">
-                                                <img src="../../public/601eeb63-6542-4a1b-b323-a23303f48d55.webp"
-                                                     loading="lazy" alt="Photo by Brock Wegner"
-                                                     className="h-full w-full object-cover object-center"/>
-                                            </div>
-                                            <div>
-                                                <span className="block text-indigo-500 font-bold">{item.publisher}</span>
-                                                <span className="block text-sm text-gray-400 font-medium">{formattedDate}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+    return (
+        <section className="lead-story">
+            <Link to={`/news/${item.id}`} className="lead-media" aria-label={item.title}>
+                <NewsImage item={item} large />
+            </Link>
+            <div className="lead-content">
+                <div className="lead-topline">
+                    <PublisherMark publisher={item.publisher} />
+                    <time>{formatDate(item.publishedDate)}</time>
                 </div>
-                {displayedNewsCount < filteredNews.length && (
-                    <div className="text-center my-8">
+                <Link to={`/news/${item.id}`} className="lead-title">
+                    {item.title}
+                </Link>
+                <p className="lead-copy">{excerpt(item.content, 260)}</p>
+                <Link to={`/news/${item.id}`} className="read-link">
+                    Haberi oku
+                </Link>
+            </div>
+        </section>
+    );
+}
+
+function News() {
+    const [page, setPage] = useState(0);
+    const [size, setSize] = useState(12);
+    const [publisher, setPublisher] = useState("");
+    const [pageData, setPageData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        let ignore = false;
+
+        setLoading(true);
+        setError("");
+
+        newsService
+            .getNewsPage({ page, size, publisher })
+            .then((result) => {
+                if (!ignore) {
+                    setPageData(result.data.data);
+                }
+            })
+            .catch(() => {
+                if (!ignore) {
+                    setError("Haberler yuklenemedi.");
+                    setPageData(null);
+                }
+            })
+            .finally(() => {
+                if (!ignore) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            ignore = true;
+        };
+    }, [page, size, publisher]);
+
+    const content = pageData?.content || [];
+    const totalElements = pageData?.totalElements || 0;
+    const totalPages = pageData?.totalPages || 0;
+    const lead = content[0];
+    const rest = content.slice(1);
+
+    const changePublisher = (nextPublisher) => {
+        setPublisher(nextPublisher);
+        setPage(0);
+    };
+
+    const changeSize = (nextSize) => {
+        setSize(nextSize);
+        setPage(0);
+    };
+
+    return (
+        <main className="news-shell">
+            <section className="news-hero">
+                <div>
+                    <p className="eyebrow">Canli haber akis paneli</p>
+                    <h1>NewsFlow</h1>
+                    <p className="hero-copy">
+                        BBC, NTV ve Sozcu haberleri tek akista; sayfa sayfa, daha hizli ve daha temiz.
+                    </p>
+                </div>
+                <div className="hero-metrics">
+                    <span>{totalElements}</span>
+                    <small>{publisher ? `${publisher} haberi` : "toplam haber"}</small>
+                </div>
+            </section>
+
+            <section className="toolbar" aria-label="Haber filtreleri">
+                <div className="source-tabs">
+                    <button
+                        className={`source-tab ${publisher === "" ? "active" : ""}`}
+                        onClick={() => changePublisher("")}
+                    >
+                        Tum kaynaklar
+                    </button>
+                    {publishers.map((source) => (
                         <button
-                            onClick={showMoreNews}
-                            className="px-6 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded"
+                            key={source}
+                            className={`source-tab ${publisher === source ? "active" : ""}`}
+                            onClick={() => changePublisher(source)}
                         >
-                            Daha Fazla Göster
+                            <PublisherMark publisher={source} compact />
+                            {source}
                         </button>
-                    </div>
-                )}
-            </div>
-        </>
+                    ))}
+                </div>
+
+                <div className="page-size-control" aria-label="Sayfa boyutu">
+                    {pageSizes.map((value) => (
+                        <button
+                            key={value}
+                            className={value === size ? "active" : ""}
+                            onClick={() => changeSize(value)}
+                        >
+                            {value}
+                        </button>
+                    ))}
+                </div>
+            </section>
+
+            {loading && (
+                <section className="state-panel">
+                    <span className="loader" />
+                    <p>Haberler yukleniyor</p>
+                </section>
+            )}
+
+            {!loading && error && (
+                <section className="state-panel error">
+                    <p>{error}</p>
+                </section>
+            )}
+
+            {!loading && !error && content.length === 0 && (
+                <section className="state-panel">
+                    <p>Bu kaynak icin haber bulunamadi.</p>
+                </section>
+            )}
+
+            {!loading && !error && content.length > 0 && (
+                <>
+                    <LeadStory item={lead} />
+                    <section className="news-grid" aria-label="Haber listesi">
+                        {rest.map((item) => (
+                            <NewsCard key={item.id} item={item} />
+                        ))}
+                    </section>
+                    <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+                </>
+            )}
+        </main>
     );
 }
 

@@ -1,11 +1,25 @@
 import axios from "axios";
 
-class NewsService{
-    getAllNews() {
-        return axios.get("https://api.denizsullu.com/api/news/getAllNewsResponses")
+const api = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL || "",
+});
+
+class NewsService {
+    getNewsPage({ page = 0, size = 12, publisher = "" } = {}) {
+        return api.get("/api/news/getNewsPageable", {
+            params: {
+                page,
+                size,
+                ...(publisher ? { publisher } : {}),
+            },
+        });
     }
-    getByTitle(id){
-        return axios.get(`https://api.denizsullu.com/api/news/findByUUID?uuid=${id}`)
+
+    getById(id) {
+        return api.get("/api/news/findByUUID", {
+            params: { uuid: id },
+        });
     }
 }
+
 export default NewsService;

@@ -18,17 +18,20 @@ public class NewsScheduledTasks {
     private final Constants constants;
 
     @Scheduled(fixedRate = 1800000)
-    @CacheEvict(value = {"getNewsByPublisherResponses", "getAllNewsResponses", "getNewsPageable", "findByTitle"}, allEntries = true)
+    @CacheEvict(value = {"getNewsByPublisherResponses", "getAllNewsResponses", "getNewsPageable", "findByUUID"}, allEntries = true)
     public void fetchAndSaveNews() {
-        try {
-            newsManager.saveNews(constants.getBbcUrl(), newsParserMap.get("bbc"));
-            newsManager.saveNews(constants.getNtvUrl(), newsParserMap.get("ntv"));
-            newsManager.saveNews(constants.getSozcu(), newsParserMap.get("sozcu"));
-            System.out.println("worked");
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+        fetchAndSavePublisher(constants.getBbcUrl(), newsParserMap.get("bbc"), "BBC");
+        fetchAndSavePublisher(constants.getNtvUrl(), newsParserMap.get("ntv"), "NTV");
+        fetchAndSavePublisher(constants.getSozcu(), newsParserMap.get("sozcu"), "Sozcu");
+    }
 
+    private void fetchAndSavePublisher(String url, NewsParser parser, String publisher) {
+        try {
+            newsManager.saveNews(url, parser);
+            System.out.println(publisher + " news fetched");
+        } catch (Exception e) {
+            System.out.println(publisher + " fetch failed: " + e.getMessage());
+        }
     }
 
 }

@@ -1,65 +1,123 @@
-import {useParams} from "react-router-dom";
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import NewsService from "../services/newsService.js";
 
-function NewsDetail() {
-    let {id} = useParams()
-    const [news, setNews] = useState({})
-    useEffect(() => {
-        let newsService = new NewsService()
-        newsService.getByTitle(id).then(result => setNews(result.data.data))
-    }, []);
-    const date = new Date(news.publishedDate);
-    const formattedDate = date.toLocaleString('tr-TR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+const newsService = new NewsService();
+const fallbackImage = "/601eeb63-6542-4a1b-b323-a23303f48d55.webp";
+
+function formatDate(value) {
+    if (!value) return "";
+
+    return new Date(value).toLocaleString("tr-TR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
+}
+
+function getSourceClass(publisher) {
+    if (publisher === "Sozcu") return "source-pill sozcu";
+    if (publisher === "NTV") return "source-pill ntv";
+    if (publisher === "BBC") return "source-pill bbc";
+    return "source-pill";
+}
+
+function NewsDetail() {
+    const { id } = useParams();
+    const [news, setNews] = useState(null);
+    const [imageSrc, setImageSrc] = useState(fallbackImage);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        let ignore = false;
+
+        setLoading(true);
+        setError("");
+
+        newsService
+            .getById(id)
+            .then((result) => {
+                if (!ignore) {
+                    const nextNews = result.data.data;
+                    setNews(nextNews);
+                    setImageSrc(nextNews?.imageUrl || fallbackImage);
+                }
+            })
+            .catch(() => {
+                if (!ignore) {
+                    setError("Haber bulunamadi.");
+                }
+            })
+            .finally(() => {
+                if (!ignore) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            ignore = true;
+        };
+    }, [id]);
+
+    if (loading) {
+        return (
+            <main className="detail-shell">
+                <section className="state-panel">
+                    <span className="loader" />
+                    <p>Haber yukleniyor</p>
+                </section>
+            </main>
+        );
+    }
+
+    if (error || !news) {
+        return (
+            <main className="detail-shell">
+                <section className="state-panel error">
+                    <p>{error || "Haber bulunamadi."}</p>
+                    <Link to="/" className="read-link">
+                        Akisa don
+                    </Link>
+                </section>
+            </main>
+        );
+    }
+
     return (
-        <div className="bg-white py-6 sm:py-8 lg:py-12">
-            <div className="mx-auto max-w-screen-xl px-4 md:px-8">
-                <div className="grid gap-8 md:grid-cols-10 lg:gap-12">
-                    <div className="md:col-span-4">
-                        <div className="h-64 overflow-hidden rounded-lg bg-gray-100 shadow-lg md:h-auto">
-                            <img
-                                src={news.imageUrl ? news.imageUrl : '/public/601eeb63-6542-4a1b-b323-a23303f48d55.webp'}
-                                loading="lazy" alt={news.title}
-                                className="h-full w-full object-cover object-center"/>
-                        </div>
+        <main className="detail-shell">
+            <Link to="/" className="back-link">
+                Akisa don
+            </Link>
+
+            <article className="detail-article">
+                <header className="detail-header">
+                    <div className="detail-meta">
+                        <span className={getSourceClass(news.publisher)}>{news.publisher}</span>
+                        <time>{formatDate(news.publishedDate)}</time>
                     </div>
+                    <h1>{news.title}</h1>
+                </header>
 
-                    <div className="md:pt-8 md:col-span-6">
+                <figure className="detail-media">
+                    <img
+                        src={imageSrc}
+                        alt={news.title}
+                        onError={() => setImageSrc(fallbackImage)}
+                    />
+                </figure>
 
-                        <h1 className="mb-4 text-center text-2xl font-bold text-gray-800 sm:text-3xl md:mb-6 md:text-left">{news.title}</h1>
-
-                        <div className="text-center font-medium text-indigo-500 md:text-left">
-                            Yayınlanma Tarihi: {formattedDate}
-                        </div>
-                        <p className={`text-gray-500 sm:text-lg  ${news.content && news.content.length > 1000 ? 'max-h-96 overflow-y-auto scrollbar-custom' : ''}`}>
-                            {news.content || 'İçerik yükleniyor...'}<br/><br/>
-                        </p>
-                      <div className="flex justify-between items-baseline">
-                        <a
-                            href={news.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded ease-in-out focus:outline-none focus:ring focus:ring-blue-300">
-                            Haber Kaynağına Git
-                        </a>
-                          <p className="text-center font-bold text-indigo-500 md:text-left mt-4 items-center">{news.publisher}</p>
-                    </div>
-
-
-
-
-
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+                <section className="detail-body">
+                    <p>{news.content}</p>
+                    <a href={news.link} target="_blank" rel="noopener noreferrer" className="source-link">
+                        Orijinal kaynaga git
+                    </a>
+                </section>
+            </article>
+        </main>
+    );
 }
 
 export default NewsDetail;

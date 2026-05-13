@@ -1,9 +1,10 @@
-version: "3.9"
+name: newsflow
 
 services:
   postgres:
     image: postgres:16-alpine
-    restart: always
+    container_name: newsflow-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: mycustomuser
       POSTGRES_PASSWORD: mysecretpassword
@@ -16,15 +17,23 @@ services:
       test: ["CMD-SHELL", "pg_isready -U mycustomuser -d deneme"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
 
   backend:
-    image: denizcex/javanewsrss:0.0.1
-    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: newsflow-backend:local
+    container_name: newsflow-backend
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/deneme
       SPRING_DATASOURCE_USERNAME: mycustomuser
       SPRING_DATASOURCE_PASSWORD: mysecretpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     ports:
       - "8080:8080"
     depends_on:
@@ -32,16 +41,21 @@ services:
         condition: service_healthy
 
   frontend:
-    image: denizcex/frontend:0.0.1
-    restart: always
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    image: newsflow-frontend:local
+    container_name: newsflow-frontend
+    restart: unless-stopped
     ports:
-      - "80:80"
+      - "3000:80"
     depends_on:
       - backend
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    restart: always
+    container_name: newsflow-pgadmin
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -50,9 +64,5 @@ services:
     depends_on:
       - postgres
 
-
-
 volumes:
   postgres_data:
-
-

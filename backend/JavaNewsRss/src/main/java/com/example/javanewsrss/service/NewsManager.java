@@ -51,8 +51,14 @@ public class NewsManager implements NewsService {
     }
 
     @Override
-    public DataResult<Page<GetPagination>> getNewsPageable(Pageable pageable) {
-        Page<News> newsPage = newsRepository.findAll(pageable);
+    public DataResult<Page<GetPagination>> getNewsPageable(Pageable pageable, String publisher) {
+        Page<News> newsPage;
+        if (publisher != null && !publisher.isBlank()) {
+            this.businessRules.checkIfPublisherExists(publisher);
+            newsPage = newsRepository.findAllByPublisher(publisher, pageable);
+        } else {
+            newsPage = newsRepository.findAll(pageable);
+        }
         Page<GetPagination> dtoPage = newsPage.map(item -> this.modelMapperService.forResponse()
                 .map(item, GetPagination.class));
 

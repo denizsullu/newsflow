@@ -17,6 +17,8 @@ public interface NewsRepository extends JpaRepository<News, String> {
 
     List<News> findAllByPublisherOrderByPublishedDateDesc(String publisher);
 
+    Page<News> findAllByPublisher(String publisher, Pageable pageable);
+
     List<News> findAllByOrderByPublishedDateDesc();
 
     News findByTitle(String title);

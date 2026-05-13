@@ -19,7 +19,7 @@ public class SozcuParser implements NewsParser {
     @Override
     public List<News> parse(JSONObject jsonObject) {
         JSONArray itemsArray = jsonObject.getJSONObject("rss").getJSONObject("channel").getJSONArray("item");
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", new Locale("tr", "TR"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
         Stream<JSONObject> stream = IntStream.range(0, itemsArray.length()).mapToObj(itemsArray::getJSONObject);
 
 

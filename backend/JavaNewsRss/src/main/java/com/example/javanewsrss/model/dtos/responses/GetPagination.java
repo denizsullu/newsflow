@@ -11,9 +11,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GetPagination {
+    private String id;
     private String title;
     private String link;
     private String content;
     private LocalDateTime publishedDate;
     private String publisher;
+    private String imageUrl;
 }

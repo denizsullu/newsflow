@@ -1,0 +1,7 @@
+target/*
+!target/JavaNewsRss-0.0.1-SNAPSHOT.jar
+.idea
+.git
+.gitignore
+*.iml
+*.log

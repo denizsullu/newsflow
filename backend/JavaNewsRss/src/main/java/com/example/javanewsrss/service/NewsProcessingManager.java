@@ -5,6 +5,7 @@ import com.example.javanewsrss.service.fetch.FetchNews;
 import com.example.javanewsrss.service.parse.NewsParser;
 import com.example.javanewsrss.exception.FetchNewsExceptions;
 import com.example.javanewsrss.model.entities.News;
+import com.example.javanewsrss.repository.NewsRepository;
 import lombok.AllArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import static com.example.javanewsrss.helper.JsonHelper.xmlToJson;
 public class NewsProcessingManager {
     private final NewsCacheService newsCacheService;
     private final FetchNews fetchClient;
+    private final NewsRepository newsRepository;
 
 
     public List<News> fetchAndProcessNews(String url, NewsParser newsParser) throws FetchNewsExceptions {
@@ -26,6 +28,7 @@ public class NewsProcessingManager {
 
         return newsParser.parse(jsonObject).stream()
                 .filter(news -> news.getContent() != null && !news.getContent().trim().isEmpty())
+                .filter(news -> !newsRepository.existsByLink(news.getLink()))
                 .filter(news -> {
                     boolean isCached = newsCacheService.isUrlCached(news.getLink());
                     if (!isCached) {

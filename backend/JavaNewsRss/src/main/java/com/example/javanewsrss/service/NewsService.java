@@ -15,7 +15,7 @@ public interface NewsService {
 
     DataResult<List<GetNewsByPublisherResponse>> getNewsByPublisherResponses(String publisher);
 
-    DataResult<Page<GetPagination>> getNewsPageable(Pageable pageable);
+    DataResult<Page<GetPagination>> getNewsPageable(Pageable pageable, String publisher);
 
     DataResult<GetByUUID> findByNewsId(String title);
 }
