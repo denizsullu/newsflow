@@ -1,15 +1,15 @@
 # NewsFlow
 
-![Java](https://img.shields.io/badge/Java-17-ef6f4f?style=flat-square)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.1.5-6db33f?style=flat-square)
-![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square)
-![Vite](https://img.shields.io/badge/Vite-5-646cff?style=flat-square)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1?style=flat-square)
+![Java](https://img.shields.io/badge/Java-21-ef6f4f?style=flat-square)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-6db33f?style=flat-square)
+![React](https://img.shields.io/badge/React-19.2-61dafb?style=flat-square)
+![Vite](https://img.shields.io/badge/Vite-8.0-646cff?style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.3-4169e1?style=flat-square)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?style=flat-square)
 
 NewsFlow is a full-stack news aggregation application. It collects RSS feeds from multiple Turkish news sources, normalizes them into a single data model, stores them in PostgreSQL, and serves a modern paginated React interface.
 
-The project started as an early junior full-stack project and has been refactored into a cleaner local development setup with Docker Compose, server-side pagination, source filtering, duplicate protection, and a refreshed editorial UI.
+The application is set up for a modern local development workflow with Docker Compose, server-side pagination, source filtering, duplicate protection, isolated backend tests, and a refreshed editorial UI.
 
 ## Preview
 
@@ -29,20 +29,21 @@ The project started as an early junior full-stack project and has been refactore
 - Server-side pagination and publisher filtering.
 - Caffeine cache for duplicate URL checks and response caching.
 - Resilience4j rate limiting for public API endpoints.
-- React + Vite frontend with a responsive editorial layout.
+- React 19 + Vite 8 frontend with a responsive editorial layout.
 - Docker Compose setup for PostgreSQL, backend, frontend, and pgAdmin.
 - Swagger UI for API exploration.
+- H2-backed test profile for backend context tests.
 
 ## Tech Stack
 
 | Layer | Technology |
 | --- | --- |
-| Backend | Java 17, Spring Boot 3.1.5, Spring Web, Spring Data JPA |
-| Database | PostgreSQL 16 |
-| Parsing | OkHttp, org.json XML conversion, Jsoup |
+| Backend | Java 21, Spring Boot 4.0.6, Spring Web, Spring Data JPA |
+| Database | PostgreSQL 18.3 |
+| Parsing | OkHttp 5, org.json XML conversion, Jsoup |
 | API utilities | ModelMapper, Caffeine Cache, Resilience4j, Springdoc OpenAPI |
-| Frontend | React 18, Vite 5, React Router, Axios, Tailwind CSS |
-| Runtime | Docker Compose, Nginx |
+| Frontend | React 19, Vite 8, React Router 7, Axios, Tailwind CSS 4 |
+| Runtime | Docker Compose, Eclipse Temurin JRE 25, Node 26, Nginx 1.29 |
 
 ## Architecture
 
@@ -82,6 +83,7 @@ newsflow/
 |   |   |-- layout/                  # top navigation
 |   |   `-- services/                # API client
 |   |-- Dockerfile
+|   |-- eslint.config.js
 |   `-- nginx.conf
 `-- screens/
     |-- newsflow-home.png
@@ -93,12 +95,12 @@ newsflow/
 For the Docker workflow:
 
 - Docker Desktop
-- Java 17
+- Java 21
 
 For frontend-only local development:
 
-- Node.js 20+
-- pnpm 9.15.9 or Corepack
+- Node.js 22.12+ recommended
+- pnpm 11.1.1 or Corepack
 
 ## Quick Start With Docker
 
@@ -149,6 +151,8 @@ docker compose up --build -d
 | PostgreSQL | `localhost:5432` |
 
 The backend fetches RSS sources on startup and then refreshes them on the scheduled interval.
+
+PostgreSQL runs on version 18.3. The Compose file uses a PostgreSQL 18-specific named volume mounted at `/var/lib/postgresql`, which matches the official PostgreSQL 18 Docker image layout.
 
 ## pgAdmin Login
 
@@ -232,7 +236,7 @@ The Vite dev server proxies `/api` requests to `http://localhost:8080`.
 ```bash
 cd frontend
 corepack enable
-corepack prepare pnpm@9.15.9 --activate
+corepack prepare pnpm@11.1.1 --activate
 pnpm install
 pnpm dev
 ```
@@ -266,6 +270,23 @@ Current sources:
 BBC:   https://www.bbc.co.uk/turkce/index.xml
 NTV:   https://www.ntv.com.tr/son-dakika.rss
 Sozcu: https://www.sozcu.com.tr/feeds-haberler
+```
+
+## Tests And Quality Checks
+
+Backend tests use the `test` Spring profile and an in-memory H2 database, so they do not require the Docker PostgreSQL service.
+
+```bash
+cd backend/JavaNewsRss
+./mvnw test
+```
+
+Frontend checks:
+
+```bash
+cd frontend
+pnpm lint
+pnpm build
 ```
 
 ## Useful Commands
@@ -332,9 +353,9 @@ docker compose logs -f backend
 
 The backend needs outbound access to RSS sources. The Compose file includes public DNS resolvers for the backend service.
 
-### Tests fail with `UnknownHostException: postgres`
+### Existing PostgreSQL 16 data is not visible after the upgrade
 
-The default application config uses the Docker hostname `postgres`. When running tests directly on the host machine, use a test profile or override the datasource URL to `localhost`.
+PostgreSQL 18 uses a new dedicated Compose volume in this project. Existing PostgreSQL 16 data is not migrated automatically. Export/import the data or run a formal PostgreSQL upgrade flow if old local data must be preserved.
 
 ### Frontend cannot reach the API
 

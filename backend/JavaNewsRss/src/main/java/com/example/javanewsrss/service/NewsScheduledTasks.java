@@ -4,6 +4,7 @@ import com.example.javanewsrss.service.parse.NewsParser;
 import com.example.javanewsrss.constant.Constants;
 import com.example.javanewsrss.exception.FetchNewsExceptions;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 @Component
 @AllArgsConstructor
+@ConditionalOnProperty(name = "news.scheduler.enabled", havingValue = "true", matchIfMissing = true)
 public class NewsScheduledTasks {
     private final NewsManager newsManager;
     private final Map<String, NewsParser> newsParserMap;
