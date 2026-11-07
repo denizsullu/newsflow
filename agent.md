@@ -1,6 +1,6 @@
 # Newsflow Agent Notları
 
-Bu dosya, projede çalışacak geliştirici veya agent için kısa ve net çalışma rehberidir.
+Bu dosya, projede çalışacak geliştirici veya agent için kısa ve net çalışma rehberidir.12
 
 ## Proje Özeti
 
